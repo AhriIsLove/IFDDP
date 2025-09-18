@@ -210,6 +210,7 @@ public class FacilityController {
             	row.put("손상유형", datas.getDamageTypeKorean());
             	// 위험도 0 -> 없음, 1~ -> A~
             	row.put("위험도", datas.getSeverity() == 0 ? "" : (char)(datas.getSeverity()+64));
+            	row.put("손상 수", datas.getDamageCnt());
             	row.put("점검자", datas.getInspectorId());
             	row.put("손상설명", datas.getDescription());
             	row.put("발생일", datas.getReportedDate());
@@ -222,21 +223,20 @@ public class FacilityController {
 	}
 	
 	@PostMapping("facilityUpload")
-	public ResponseEntity<?> facilityUpload(@RequestParam("file") MultipartFile file) {
-		try {
-            // 파일 확장자 검사
-            if (!file.getOriginalFilename().endsWith(".xlsx") && !file.getOriginalFilename().endsWith(".xls")) {
-                return ResponseEntity.badRequest().body("Excel 파일만 업로드 가능합니다.");
-            }
-            
-            // 서비스에 파일 전달하여 처리
-            // excelService.processExcelFile(file);
-            
-            return ResponseEntity.ok("파일 업로드 및 처리 완료");
-        } catch (Exception e) {
-            e.printStackTrace();
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("파일 처리 중 오류 발생: " + e.getMessage());
+	public ResponseEntity<?> facilityUpload(@RequestParam("file") MultipartFile file) {// 파일 확장자 검사
+        if (!file.getOriginalFilename().endsWith(".xlsx") && !file.getOriginalFilename().endsWith(".xls")) {
+            return ResponseEntity.badRequest().body("Excel 파일만 업로드 가능합니다.");
         }
+        
+		try {
+			// 정상 작동시 0(헤더 라인으로 오류시 반환될 일 없음)
+			// 오류 발생시 오류 발생 행 반환
+			int errorRow = facilityService.registFacilitys(file);
+
+	        return ResponseEntity.ok("파일 업로드 및 처리 완료");
+	    } catch (Exception e) {
+	        e.printStackTrace();
+	        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("파일 처리 중 오류 발생: " + e.getMessage());
+	    }
 	}
-	
 }

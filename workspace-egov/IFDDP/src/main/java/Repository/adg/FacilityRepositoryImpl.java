@@ -130,10 +130,27 @@ public class FacilityRepositoryImpl implements FacilityRepository {
 		}
 		catch (Exception e) {
 			// TODO: handle exception
-			System.out.println("시설물 종류 가져오기 실패");
+			System.out.println("시설물 모든 종류 가져오기 실패");
 		}
 
 		return bunryuDtos;
+	}
+	@Override
+	public int getFacilityType(String typeKorean) {
+		int type = 0;
+		try {
+			// SELECT : 시설물 데이터
+			type = sqlSession.selectOne("Facility.getFacilityType", typeKorean);
+			
+			// System.out.println(facilityDtos);
+		}
+		catch (Exception e) {
+			// TODO: handle exception
+			System.out.println("시설물 종류 가져오기 실패");
+			System.out.println(e);
+		}
+		
+		return type;
 	}
 
 	@Override

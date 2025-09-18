@@ -35,4 +35,10 @@
 	        #{fileName}
 	    )
 	</insert>
+	
+    <select id="getDamageType" resultType="int">
+        SELECT "MCD" FROM bunryu 
+        WHERE "BCD" = 300 AND "CONTENTS" = #{typeKorean}
+    </select>
+    
 </mapper>

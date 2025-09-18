@@ -10,6 +10,7 @@
 			f."FACILITY_SCALE" || '종' as "FACILITY_SCALE_KOREAN", 
 			db."CONTENTS" as "DAMAGE_TYPE_KOREAN", 
 			d."SEVERITY", 
+			d."DAMAGE_CNT", 
 			d."INSPECTOR_ID", 
 			d."DESCRIPTION", 
 			d."REPORTED_DATE"
@@ -68,6 +69,10 @@
     <select id="getAllFacilityType" resultType="Dto.adg.BunryuDto">
         SELECT * FROM bunryu 
         WHERE "BCD" = 200 AND "MCD" != 999
+    </select>
+    <select id="getFacilityType" resultType="int">
+        SELECT "MCD" FROM bunryu 
+        WHERE "BCD" = 200 AND "CONTENTS" = #{typeKorean}
     </select>
     
     <select id="getDamageTypeOfFacility" resultType="Dto.adg.BunryuDto">

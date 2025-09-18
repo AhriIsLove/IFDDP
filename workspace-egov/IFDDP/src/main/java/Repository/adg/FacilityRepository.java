@@ -19,6 +19,8 @@ public interface FacilityRepository {
 
 	// 모든 시설물 종류
 	List<BunryuDto> getAllFacilityType();
+	// 시설물 종류(String -> int)
+	int getFacilityType(String typeKorean);
 
 	// 시설물의 모든 손상 종류
 	List<BunryuDto> getDamageTypeOfFacility(int facilityType);

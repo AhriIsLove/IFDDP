@@ -190,7 +190,7 @@
 	            
 	         	// Ajax로 컨트롤러 호출
 	            $.ajax({
-	                url: '/facilityUpload', // 컨트롤러 URL
+	                url: '${pageContext.request.contextPath}/facilityUpload', // 컨트롤러 URL
 	                type: 'POST',
 	                data: formData,
 	                processData: false,  // 필수: FormData 처리 방지
@@ -204,6 +204,11 @@
 	                error: function(error) {
 	                    console.error('업로드 실패:', error);
 	                    alert('Excel 파일 업로드 실패!');
+	                },
+	                // finally
+	                complete: function() {
+	                	// 새로고침
+	                	location.reload();
 	                }
 	            });
 	        }

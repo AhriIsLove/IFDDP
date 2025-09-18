@@ -33,6 +33,7 @@ public class FacilityDto {
 	// 조인용 손상 정보
 	private String damageTypeKorean;
 	private int severity;
+	private int damageCnt;
 	private String inspectorId;
 	private String description;
 	private String reportedDate;

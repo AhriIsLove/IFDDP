@@ -1,6 +1,9 @@
 package Service.adg;
 
+import java.io.IOException;
 import java.util.List;
+
+import org.springframework.web.multipart.MultipartFile;
 
 import Dto.adg.BunryuDto;
 import Dto.adg.FacilityDto;
@@ -25,4 +28,5 @@ public interface FacilityService {
 	
 	// 시설물 등록
 	int registFacility(FacilityDto facilityDto);
+	int registFacilitys(MultipartFile file) throws IOException;
 }
