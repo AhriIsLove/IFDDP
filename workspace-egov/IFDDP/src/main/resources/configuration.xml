@@ -8,5 +8,7 @@
     <typeAliases>
         <!-- 여기는 필요한 모델 클래스들 별칭 설정하는 곳 -->
         <!-- <typeAlias type="IFDDP.model.YourModel" alias="YourModel"/> -->
+        <typeAlias type="Dto.adg.FacilityDto" 	alias="FacilityDto"/>
+        <typeAlias type="Dto.nkm.MarkerDTO" 	alias="MarkerDTO"/>
     </typeAliases>
 </configuration>

@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="Marker">
+	 <select id="getFacilityMarkers3"   resultType="Dto.adg.FacilityDto">
+	    SELECT
+	        f."GEOM"
+	       
+	    FROM public.facility f
+	</select>
+	
+	<select id="getFacilityMarkersAll" resultType="MarkerDTO">
+	    SELECT
+	    	f."FACILITY_ID"
+	        , CASE WHEN f."GEOM" IS NOT NULL 
+	             THEN ST_AsText(f."GEOM")
+	             ELSE NULL
+	          END as geom
+			, COALESCE(d."SEVERITY",3) as severity
+	    FROM facility f LEFT OUTER JOIN damage d
+		ON f."FACILITY_ID" = d."FACILITY_ID"
+	    ORDER BY f."FACILITY_ID" ASC;	
+	</select>
+   
+    <select id="getFacilityMarkers" parameterType="int" resultType="MarkerDTO">
+	    SELECT
+	    	f."FACILITY_ID"
+	        , CASE WHEN f."GEOM" IS NOT NULL 
+	             THEN ST_AsText(f."GEOM")
+	             ELSE NULL
+	          END as geom
+			, COALESCE(d."SEVERITY",3) as severity
+	    FROM facility f LEFT OUTER JOIN damage d
+		ON f."FACILITY_ID" = d."FACILITY_ID"
+	    WHERE f."FACILITY_TYPE" = #{facilityType}
+	    ORDER BY f."FACILITY_ID" ASC;
+    </select>
+</mapper>
