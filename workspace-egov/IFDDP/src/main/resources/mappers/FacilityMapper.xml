@@ -100,4 +100,41 @@
 	        #{yearBuilt}
 	    )
 	</insert>
+	
+	<resultMap id="facilityWithDamageMap" type="Dto.adg.FacilityDto">
+    	<id property="facilityId" column="FACILITY_ID"/>
+    	<result property="facilityName" column="FACILITY_NAME"/>
+	    <result property="facilityTypeKorean" column="FACILITY_TYPE_KOREAN"/>
+	    <result property="facilityScale" column="FACILITY_SCALE"/>
+	    <result property="geom" column="GEOM"/>
+	    <result property="region" column="REGION"/>
+	    <result property="address" column="ADDRESS"/>
+	    <result property="yearBuilt" column="YEAR_BUILT"/>
+	    <collection property="damageList" ofType="Dto.adg.DamageDto">
+        	<id property="damageId" column="DAMAGE_ID"/> 
+	        <result property="severity" column="SEVERITY"/>
+	    	<result property="damageTypeKorean" column="DAMAGE_TYPE_KOREAN"/>
+	        <result property="damageCnt" column="DAMAGE_CNT"/>
+	        <result property="inspectorId" column="INSPECTOR_ID"/>
+	        <result property="description" column="DESCRIPTION"/>
+	        <result property="reportedDate" column="REPORTED_DATE"/>
+	    </collection>
+	</resultMap>
+    <select id="getFacilityById" resultMap="facilityWithDamageMap">
+    	SELECT f.*, 
+			fb."CONTENTS" AS "FACILITY_TYPE_KOREAN", 
+			db."CONTENTS" as "DAMAGE_TYPE_KOREAN", 
+			d."DAMAGE_ID", 
+			d."SEVERITY", 
+			d."DAMAGE_CNT", 
+			d."INSPECTOR_ID", 
+			d."DESCRIPTION", 
+			d."REPORTED_DATE"
+        FROM facility f 
+		LEFT JOIN bunryu fb ON f."FACILITY_TYPE" = fb."MCD" and fb."BCD" = 200
+		LEFT join damage d on f."FACILITY_ID" = d."FACILITY_ID"
+		LEFT JOIN bunryu db ON d."DAMAGE_TYPE" = db."MCD" and db."BCD" = 300 
+        WHERE f."FACILITY_ID" = ${facilityId}
+    </select>
+    
 </mapper>

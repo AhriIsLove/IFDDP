@@ -28,4 +28,6 @@ public interface FacilityRepository {
 	// 시설물 등록
 	int registFacility(FacilityDto facilityDto);
 
+	// 시설물 조회
+	FacilityDto getFacilityById(FacilityDto facilityDto);
 }

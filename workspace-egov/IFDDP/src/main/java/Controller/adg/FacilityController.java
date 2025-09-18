@@ -239,4 +239,30 @@ public class FacilityController {
 	        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("파일 처리 중 오류 발생: " + e.getMessage());
 	    }
 	}
+
+	@GetMapping("/facilityDetail.do")
+	public String showFacilityDetail(FacilityDto p_FacilityDto, Model model) {
+		// 시설물 조회
+		FacilityDto facilityDto = facilityService.getFacilityById(p_FacilityDto);
+		
+		// System.out.println(facilityDto);
+
+		model.addAttribute("facilityDto", facilityDto);
+		
+		// 등록 페이지로 이동
+		return "facilityManage/facilityDetail";
+	}
+
+	@GetMapping("/facilityDamageImg")
+	public ResponseEntity<?> showFacilityDetail(@RequestParam("damageId")int damageId) {
+		try {
+			facilityService.getDamageImgOfDamageId(damageId);
+			
+	        return ResponseEntity.ok("손상이미지 가져오기 성공");
+	    } catch (Exception e) {
+	        e.printStackTrace();
+	        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("파일 처리 중 오류 발생: " + e.getMessage());
+	    }
+	}
+	
 }

@@ -111,7 +111,7 @@
 
                     const count = (currentPage * 10) + index + 1;
                     
-                	html += '<tr>' +
+                	html += '<tr onclick="location.href=\'${pageContext.request.contextPath}/facilityDetail.do?facilityId=' + facility.facilityId + '\';">' +
                     '<td style="text-align: center;">' + count + '</td>' +  // 여기에 count 추가
                     '<td style="text-align: center;">' + (facility.facilityId || '') + '</td>' +
                     '<td>' + (facility.facilityName || '') + '</td>' +

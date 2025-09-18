@@ -7,9 +7,9 @@
     <!-- DataSource -->
     <bean id="dataSource" class="org.apache.commons.dbcp2.BasicDataSource" destroy-method="close">
         <property name="driverClassName" value="org.postgresql.Driver" />
-        <property name="url" value="jdbc:postgresql://localhost:5432/mapo_facilty_test" />
+        <property name="url" value="jdbc:postgresql://localhost:5432/postgres" />
         <property name="username" value="postgres" />
-        <property name="password" value="1234" />
+        <property name="password" value="postgre" />
         <property name="initialSize" value="5" />
         <property name="maxTotal" value="20" />
     </bean>

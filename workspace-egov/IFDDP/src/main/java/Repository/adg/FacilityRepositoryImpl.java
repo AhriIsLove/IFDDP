@@ -194,4 +194,21 @@ public class FacilityRepositoryImpl implements FacilityRepository {
 		return result;
 	}
 
+	@Override
+	public FacilityDto getFacilityById(FacilityDto p_FacilityDto) {
+		FacilityDto facilityDto = null;
+		try {
+			// SELECT : 시설물 데이터
+			facilityDto = sqlSession.selectOne("Facility.getFacilityById", p_FacilityDto);
+			
+			System.out.println(facilityDto);
+		}
+		catch (Exception e) {
+			// TODO: handle exception
+			System.out.println("시설물 조회 실패");
+			System.out.println(e);
+		}
+		
+		return facilityDto;
+	}
 }

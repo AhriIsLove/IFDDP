@@ -89,4 +89,11 @@ public class DamageRepositoryImpl implements DamageRepository {
 		
 		return type;
 	}
+
+	@Override
+	public List<String> getDamageImgs(int damageId) {
+		// 손상 이미지 가져오기
+		
+		return null;
+	}
 }

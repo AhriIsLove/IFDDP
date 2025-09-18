@@ -29,4 +29,10 @@ public interface FacilityService {
 	// 시설물 등록
 	int registFacility(FacilityDto facilityDto);
 	int registFacilitys(MultipartFile file) throws IOException;
+	
+	// 시설물 조회
+	FacilityDto getFacilityById(FacilityDto facilityDto);
+	
+	// 시설물 손상 이미지
+	List<String> getDamageImgOfDamageId(int damageId);
 }

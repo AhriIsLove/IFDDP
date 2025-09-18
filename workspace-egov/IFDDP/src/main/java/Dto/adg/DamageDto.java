@@ -21,6 +21,8 @@ public class DamageDto {
 	@DateTimeFormat(pattern = "yyyy-MM-dd")
 	private Date reportedDate; // 평가 실시일
 
+	private String damageTypeKorean;
+	
 	//손상 이미지 파일
     private List<MultipartFile> damageFiles;
 }

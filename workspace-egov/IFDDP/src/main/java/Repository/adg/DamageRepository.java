@@ -10,4 +10,7 @@ public interface DamageRepository {
 	
 	// 손상 종류(String -> int)
 	int getDamageType(String typeKorean);
+	
+	// 손상 이미지 조회
+	List<String> getDamageImgs(int damageId);
 }

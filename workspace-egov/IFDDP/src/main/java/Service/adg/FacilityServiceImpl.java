@@ -15,6 +15,7 @@ import org.apache.poi.ss.usermodel.Workbook;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.geotools.geometry.DirectPosition2D;
 import org.geotools.referencing.CRS;
+import org.locationtech.jts.geom.Point;
 import org.opengis.referencing.FactoryException;
 import org.opengis.referencing.crs.CoordinateReferenceSystem;
 import org.opengis.referencing.operation.MathTransform;
@@ -28,6 +29,7 @@ import Dto.adg.DamageDto;
 import Dto.adg.FacilityDto;
 import Repository.adg.DamageRepository;
 import Repository.adg.FacilityRepository;
+import Util.GISPointConverter;
 import lombok.RequiredArgsConstructor;
 
 @Service
@@ -271,5 +273,23 @@ public class FacilityServiceImpl implements FacilityService {
 	        default:
 	            return "";
 	    }
+	}
+
+	@Override
+	public FacilityDto getFacilityById(FacilityDto p_FacilityDto) {
+		FacilityDto facilityDto = facilityRepository.getFacilityById(p_FacilityDto);
+		if(facilityDto != null) {
+			// geom을 lon,lat으로 변환
+			Point point = GISPointConverter.getLatLonFromGeom(facilityDto.getGeom());
+			facilityDto.setFacilityGeomX(point.getX());
+			facilityDto.setFacilityGeomY(point.getY());
+		}
+		
+		return facilityDto;
+	}
+
+	@Override
+	public List<String> getDamageImgOfDamageId(int damageId) {
+		return damageRepository.getDamageImgs(damageId);
 	}
 }
