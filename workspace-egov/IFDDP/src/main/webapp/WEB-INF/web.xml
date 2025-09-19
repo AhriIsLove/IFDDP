@@ -29,14 +29,26 @@
         <url-pattern>/</url-pattern>
         <url-pattern>*.do</url-pattern>
     </filter-mapping>
+    <filter-mapping>
+        <filter-name>encodingFilter</filter-name>
+        <url-pattern>/api/*</url-pattern>
+    </filter-mapping>
     
-    <!-- 디스패처 서블릿 설정 -->
+	<!-- CORS 필터 -->
+
+    
+    
+    <!-- 디스패처 서블릿 설정 (Java Config 사용) -->
     <servlet>
         <servlet-name>action</servlet-name>
         <servlet-class>org.springframework.web.servlet.DispatcherServlet</servlet-class>
         <init-param>
+            <param-name>contextClass</param-name>
+            <param-value>org.springframework.web.context.support.AnnotationConfigWebApplicationContext</param-value>
+        </init-param>
+        <init-param>
             <param-name>contextConfigLocation</param-name>
-            <param-value>/WEB-INF/config/dispatcher-servlet.xml</param-value>
+            <param-value>Config.WebConfig</param-value>
         </init-param>
         <load-on-startup>1</load-on-startup>
     </servlet>
@@ -45,12 +57,16 @@
         <url-pattern>/</url-pattern>
         <url-pattern>*.do</url-pattern>
     </servlet-mapping>
+    <servlet-mapping>
+        <servlet-name>action</servlet-name>
+        <url-pattern>/api/*</url-pattern>
+    </servlet-mapping>
     
-    <!-- 웰컴 파일 -->
+    <!-- 웰컴 파일 리스트 -->
     <welcome-file-list>
-	    <welcome-file>redirect.jsp</welcome-file>
-	</welcome-file-list>
-	
+        <welcome-file>main.do</welcome-file>
+    </welcome-file-list>
+    
     <!-- 세션 설정 -->
     <session-config>
         <session-timeout>30</session-timeout>

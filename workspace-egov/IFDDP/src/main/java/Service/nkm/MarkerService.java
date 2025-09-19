@@ -3,9 +3,10 @@ package Service.nkm;
 import java.util.List;
 
 import Dto.adg.FacilityDto;
+import Dto.nkm.MarkerDTO;
 
 public interface MarkerService {
 
-	List<FacilityDto> getFacilityMarkers(FacilityDto facilityType);
+	List<MarkerDTO> getFacilityMarkers(FacilityDto facilityType);
 
 }
