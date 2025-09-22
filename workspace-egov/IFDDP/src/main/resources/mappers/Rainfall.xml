@@ -1,0 +1,127 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="Rainfall">
+    
+    <!-- 마포구 시설물 조회 (MarkerDTO 형태로) -->
+    <select id="getMapoFacilities" resultType="MarkerDTO">
+        SELECT 
+            f."FACILITY_ID" as facilityId,
+            f."FACILITY_NAME" as facilityName,
+            f."FACILITY_TYPE" as facilityType,
+            f."ADDRESS" as address,
+            CASE WHEN f."GEOM" IS NOT NULL
+                THEN ST_AsText(f."GEOM")
+                ELSE NULL
+            END as geom,
+            COALESCE(d."SEVERITY",3) as severity
+        FROM facility f LEFT OUTER JOIN damage d
+        ON f."FACILITY_ID" = d."FACILITY_ID"
+        WHERE f."REGION" LIKE '%마포구%'
+        AND f."GEOM" IS NOT NULL
+        ORDER BY f."FACILITY_ID" ASC
+    </select>
+    
+    <!-- 특정 지역의 시설물 조회 -->
+    <select id="getFacilitiesByRegion" parameterType="string" resultType="MarkerDTO">
+        SELECT 
+            f."FACILITY_ID" as facilityId,
+            f."FACILITY_NAME" as facilityName,
+            f."FACILITY_TYPE" as facilityType,
+            f."ADDRESS" as address,
+            CASE WHEN f."GEOM" IS NOT NULL
+                THEN ST_AsText(f."GEOM")
+                ELSE NULL
+            END as geom,
+            COALESCE(d."SEVERITY",3) as severity
+        FROM facility f LEFT OUTER JOIN damage d
+        ON f."FACILITY_ID" = d."FACILITY_ID"
+        WHERE f."REGION" LIKE '%' || #{region} || '%'
+        AND f."GEOM" IS NOT NULL
+        ORDER BY f."FACILITY_ID" ASC
+    </select>
+    
+    <!-- 좌표 정보가 있는 모든 시설물 조회 -->
+    <select id="getFacilitiesWithCoordinates" resultType="MarkerDTO">
+        SELECT 
+            f."FACILITY_ID" as facilityId,
+            f."FACILITY_NAME" as facilityName,
+            f."FACILITY_TYPE" as facilityType,
+            f."ADDRESS" as address,
+            CASE WHEN f."GEOM" IS NOT NULL
+                THEN ST_AsText(f."GEOM")
+                ELSE NULL
+            END as geom,
+            COALESCE(d."SEVERITY",3) as severity
+        FROM facility f LEFT OUTER JOIN damage d
+        ON f."FACILITY_ID" = d."FACILITY_ID"
+        WHERE f."GEOM" IS NOT NULL
+        AND ST_Y(f."GEOM") BETWEEN 33 AND 39  -- 한국 위도 범위
+        AND ST_X(f."GEOM") BETWEEN 124 AND 132  -- 한국 경도 범위
+        ORDER BY f."FACILITY_ID" ASC
+    </select>
+    
+    <!-- 마포구 시설물 개수 조회 -->
+    <select id="getMapoFacilitiesCount" resultType="int">
+        SELECT COUNT(*)
+        FROM facility f
+        WHERE f."REGION" LIKE '%마포구%'
+        AND f."GEOM" IS NOT NULL
+    </select>
+    
+    <!-- 특정 지역 시설물 개수 조회 -->
+    <select id="getFacilitiesCountByRegion" parameterType="string" resultType="int">
+        SELECT COUNT(*)
+        FROM facility f
+        WHERE f."REGION" LIKE '%' || #{region} || '%'
+        AND f."GEOM" IS NOT NULL
+    </select>
+    
+    <!-- 시설물 타입별 마포구 시설물 조회 -->
+    <select id="getMapoFacilitiesByType" parameterType="int" resultType="MarkerDTO">
+        SELECT 
+            f."FACILITY_ID" as facilityId,
+            f."FACILITY_NAME" as facilityName,
+            f."FACILITY_TYPE" as facilityType,
+            f."ADDRESS" as address,
+            CASE WHEN f."GEOM" IS NOT NULL
+                THEN ST_AsText(f."GEOM")
+                ELSE NULL
+            END as geom,
+            COALESCE(d."SEVERITY",3) as severity
+        FROM facility f LEFT OUTER JOIN damage d
+        ON f."FACILITY_ID" = d."FACILITY_ID"
+        WHERE f."REGION" LIKE '%마포구%'
+        AND f."FACILITY_TYPE" = #{facilityType}
+        AND f."GEOM" IS NOT NULL
+        ORDER BY f."FACILITY_ID" ASC
+    </select>
+    
+    <!-- 특정 반경 내 시설물 조회 (중심점 기준) -->
+    <select id="getFacilitiesWithinRadius" resultType="MarkerDTO">
+        SELECT 
+            f."FACILITY_ID" as facilityId,
+            f."FACILITY_NAME" as facilityName,
+            f."FACILITY_TYPE" as facilityType,
+            f."ADDRESS" as address,
+            CASE WHEN f."GEOM" IS NOT NULL
+                THEN ST_AsText(f."GEOM")
+                ELSE NULL
+            END as geom,
+            COALESCE(d."SEVERITY",3) as severity,
+            ST_Distance(
+                f."GEOM", 
+                ST_SetSRID(ST_MakePoint(#{centerLng}, #{centerLat}), 5186)
+            ) as distance
+        FROM facility f LEFT OUTER JOIN damage d
+        ON f."FACILITY_ID" = d."FACILITY_ID"
+        WHERE f."GEOM" IS NOT NULL
+        AND ST_Distance(
+            f."GEOM", 
+            ST_SetSRID(ST_MakePoint(#{centerLng}, #{centerLat}), 5186)
+        ) &lt;= #{radiusMeters}
+        ORDER BY distance
+    </select>
+    
+</mapper>

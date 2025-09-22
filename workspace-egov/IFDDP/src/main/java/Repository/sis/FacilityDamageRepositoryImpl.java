@@ -66,7 +66,12 @@ public class FacilityDamageRepositoryImpl implements FacilityDamageRepository {
     
     @Override
     public Map<String, Object> selectFacilityBasicInfo(int facilityId) {
-    	System.out.println("kkk FacilityDamageRepositoryImpl selectFacilityBasicInfo facilityId->"+facilityId);
         return sqlSession.selectOne(NAMESPACE + ".selectFacilityBasicInfo", facilityId);
+    }
+    
+    @Override
+    public List<Map<String, Object>> getDailyDamageImpact(int facilityId, int bcd, String from, String to) {
+        return sqlSession.selectList(NAMESPACE + ".getDailyDamageImpact",
+                Map.of("facilityId", facilityId, "bcd", bcd, "from", from, "to", to));
     }
 }

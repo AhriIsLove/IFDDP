@@ -176,5 +176,22 @@
     WHERE f."FACILITY_TYPE" = #{facilityType}
     ORDER BY f."FACILITY_ID" ASC;
   </select>
+  
+  
+	  <!-- 날짜별 손상 영향도 조회 -->
+	<select id="getDailyDamageImpact" resultType="map">
+	  SELECT
+	    d."REPORTED_DATE" AS datelabel,
+	    b."CONTENTS" AS damage_type_name,
+	    d."DAMAGE_IMPACT" AS damage_impact,
+	    d."DAMAGE_CNT" AS damage_count  -- ★ 건수 추가
+	  FROM public.damage d
+	  INNER JOIN public.bunryu b
+	    ON d."DAMAGE_TYPE" = b."MCD"
+	   AND b."BCD" = #{bcd}
+	  WHERE d."FACILITY_ID" = #{facilityId}
+	    AND d."REPORTED_DATE" BETWEEN #{from}::date AND #{to}::date
+	  ORDER BY d."REPORTED_DATE", b."CONTENTS"
+	</select>
 
 </mapper>

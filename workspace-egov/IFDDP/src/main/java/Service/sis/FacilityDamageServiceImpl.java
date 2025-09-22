@@ -44,7 +44,7 @@ public class FacilityDamageServiceImpl implements FacilityDamageService {
      // 시설물 기본 정보 먼저 조회
         Map<String, Object> facilityBasicInfo = facilityDamageRepository.selectFacilityBasicInfo(facilityId);
         String facilityName = facilityBasicInfo != null ? (String) facilityBasicInfo.get("facilityName") : "";
-        System.out.println("kkk getFacilityDamageStatistics facilityBasicInfo->"+facilityBasicInfo); 
+
         Integer facilityType = facilityDamageRepository.selectFacilityType(facilityId);
         int bcd = mapFacilityTypeToBcd(facilityType);
 
@@ -108,6 +108,8 @@ public class FacilityDamageServiceImpl implements FacilityDamageService {
             }
         }
         dailyDataObj.put("counts", counts);
+        
+        Map<String, String> dailyImpacts = getDailyDamageImpact(facilityId, bcd, from, to);
 
         List<Map<String, Object>> typeDistList = new ArrayList<>();
         for (Map<String, Object> t : weeklyTypeDistribution) {
@@ -126,6 +128,15 @@ public class FacilityDamageServiceImpl implements FacilityDamageService {
                 item.put("dateLabel",  dateLabel);
                 item.put("damageType", damageTypeObj);
                 item.put("count",      cnt);
+                
+             // ★ 추가: 날짜별 영향도 설정
+               
+                String impactKey = dateLabel + "|" + damageTypeName;
+                String dailyImpact = dailyImpacts.getOrDefault(impactKey, 
+                                    impactGradeMap.getOrDefault(damageTypeName, "-"));
+                item.put("damageImpact", dailyImpact);
+                
+                               
                 typeDistList.add(item);
             }
         }
@@ -204,4 +215,53 @@ public class FacilityDamageServiceImpl implements FacilityDamageService {
         if (o == null) return 0.0; if (o instanceof Number) return ((Number)o).doubleValue();
         try { return Double.parseDouble(String.valueOf(o)); } catch(Exception e){ return 0.0; }
     }
+    
+    private Map<String, String> getDailyDamageImpact(int facilityId, int bcd, String from, String to) throws Exception {
+        List<Map<String, Object>> dailyImpacts = 
+            facilityDamageRepository.getDailyDamageImpact(facilityId, bcd, from, to);
+        
+        System.out.println("[DEBUG] getDailyDamageImpact raw data: " + dailyImpacts);
+        
+        Map<String, String> result = new HashMap<>();
+        for (Map<String, Object> item : dailyImpacts) {
+            //String dateLabel = (String) item.get("datelabel");
+        	Object dateObj = item.get("datelabel");
+        	String dateLabel = (dateObj != null) ? dateObj.toString() : null;
+        	
+            String typeName = (String) item.get("damage_type_name");
+            String impact = (String) item.get("damage_impact");
+            
+            if (dateLabel != null && typeName != null && impact != null) {
+                String key = dateLabel + "|" + typeName;
+                result.put(key, impact);
+            }
+        }
+        return result;
+    
+    }
+    
+ // private getDailyDamageImpact 메서드 완전 제거
+
+    @Override
+    public List<Map<String, Object>> getIndividualDamageData(int facilityId, String from, String to) throws Exception {
+        Integer facilityType = facilityDamageRepository.selectFacilityType(facilityId);
+        int bcd = mapFacilityTypeToBcd(facilityType);
+        
+        // Repository의 public 메서드 직접 호출
+        List<Map<String, Object>> dailyImpacts = 
+            facilityDamageRepository.getDailyDamageImpact(facilityId, bcd, from, to);
+        
+        // 날짜 형식 변환 처리
+        for (Map<String, Object> item : dailyImpacts) {
+            Object dateObj = item.get("datelabel");
+            if (dateObj != null) {
+                item.put("dateLabel", dateObj.toString());
+            }
+        }
+        
+        System.out.println("[DEBUG] getIndividualDamageData result: " + dailyImpacts);
+        return dailyImpacts;
+    }
+  
+    
 }

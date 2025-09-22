@@ -29,7 +29,6 @@ public class FacilityDamageController {
             List<FacilityDamageDTO> list = facilityDamageService.getFacilityDamageInfo(facilityId);
             if (!list.isEmpty()) {
                 FacilityDamageDTO first = list.get(0);
-                System.out.println("FacilityDamageController getFacilityInfo first->"+first);
                 model.addAttribute("facilityName", first.getFacilityName());
                 model.addAttribute("facilityAddress", first.getAddress());
             } else {
@@ -60,12 +59,11 @@ public class FacilityDamageController {
             @RequestParam(value="from", required = false) String from,
             @RequestParam(value="to",   required = false) String to
     ) {
-    	System.out.println("API 호출됨 - facilityId: " + facilityId); // 이 줄 추가
+    	System.out.println("API 호출됨 - facilityId: " + facilityId);
         try {
             String fromDate = (from != null && !from.isEmpty()) ? from : "2024-07-01";
             String toDate   = (to   != null && !to.isEmpty())   ? to   : "2025-09-30";
 
-            // [CTRL-LOG1] API 진입 파라미터 확인
             System.out.println("[CTRL] /api/damage/statistics in: facilityId=" + facilityId
                     + ", from=" + fromDate + ", to=" + toDate);
 
@@ -76,8 +74,6 @@ public class FacilityDamageController {
             body.put("facilityId", facilityId);
             body.put("facilityName", safeStr(raw.get("facilityName")));
 
-            System.out.println("kkk FacilityDamageController getDamageStatistics body1->"+body);
-            
             @SuppressWarnings("unchecked")
             Map<String, Object> facilityType = (Map<String, Object>) raw.get("facilityType");
             if (facilityType != null) {
@@ -87,7 +83,6 @@ public class FacilityDamageController {
                         "name",  safeStr(facilityType.get("name"))
                 ));
             }
-            System.out.println("kkk FacilityDamageController getDamageStatistics body2->"+body);
 
             @SuppressWarnings("unchecked")
             Map<String, Integer> damageTypeCount =
@@ -126,11 +121,16 @@ public class FacilityDamageController {
             }
             body.put("summaryData", summaryData);
 
-            Map<String, Object> dailyObj = buildDailyObject(raw);
+            Map<String, Object> dailyObj = buildDailyObject(raw, damageImpact);
             body.put("dailyData", dailyObj);
+            try {
+                List<Map<String, Object>> individualDamages = facilityDamageService.getIndividualDamageData(facilityId, fromDate, toDate);
+                body.put("dailyImpacts", individualDamages);
+            } catch (Exception e) {
+                body.put("dailyImpacts", Collections.emptyList());
+            }
             ensureEmptyStructures(body);
 
-            // [CTRL-LOG2] 서비스 결과 요약(사이즈) 확인
             int cntCounts = 0, cntType = 0, cntImpact = 0;
             if (dailyObj instanceof Map) {
                 Object c = ((Map<?,?>) dailyObj).get("counts");
@@ -140,7 +140,7 @@ public class FacilityDamageController {
                 cntType   = (t instanceof List) ? ((List<?>) t).size() : 0;
                 cntImpact = (i instanceof List) ? ((List<?>) i).size() : 0;
             }
-            System.out.println("--kkk-->[CTRL] service ok: summary=" + summaryData.size()
+            System.out.println("[CTRL] service ok: summary=" + summaryData.size()
                     + ", counts=" + cntCounts + ", typeDist=" + cntType + ", impact=" + cntImpact);
 
             return ResponseEntity.ok(body);
@@ -152,9 +152,8 @@ public class FacilityDamageController {
         }
     }
 
-    // ====== 이하 기존 헬퍼 메서드들 그대로 ======
     @SuppressWarnings("unchecked")
-    private Map<String, Object> buildDailyObject(Map<String, Object> raw) { /* 생략 없이 기존 그대로 */ 
+    private Map<String, Object> buildDailyObject(Map<String, Object> raw, Map<String, String> damageImpact) {
         Object daily = raw.get("dailyData");
         if (daily instanceof Map) {
             Map<String, Object> obj = (Map<String, Object>) daily;
@@ -166,7 +165,7 @@ public class FacilityDamageController {
             List<Map<String, Object>> impactScores =
                     sortByDateLabel((List<Map<String, Object>>) obj.getOrDefault("impactScores", Collections.emptyList()));
             normalized.put("counts", counts);
-            normalized.put("typeDist", normalizeTypeDist(typeDist));
+            normalized.put("typeDist", normalizeTypeDist(typeDist, damageImpact));
             normalized.put("impactScores", impactScores);
             return normalized;
         }
@@ -178,7 +177,7 @@ public class FacilityDamageController {
     }
 
     @SuppressWarnings("unchecked")
-    private List<Map<String, Object>> normalizeTypeDist(List<Map<String, Object>> typeDist) { /* 기존 그대로 */ 
+    private List<Map<String, Object>> normalizeTypeDist(List<Map<String, Object>> typeDist, Map<String, String> damageImpact) {
         Map<String, Map<String, Object>> dedup = new LinkedHashMap<>();
         for (Map<String, Object> item : typeDist) {
             String date = safeStr(item.get("dateLabel"));
@@ -192,6 +191,9 @@ public class FacilityDamageController {
                 newItem.put("dateLabel", date);
                 newItem.put("damageType", damageTypeObj);
                 newItem.put("count", 0);
+                String impact = damageImpact.getOrDefault(name, "-");
+                newItem.put("damageImpact", impact);
+                newItem.put("severity", impact);
                 dedup.put(key, newItem);
                 existing = newItem;
             }
