@@ -1,0 +1,180 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="mappers.FacilityDamageMapper">
+
+  <!-- FacilityDamageDTO ResultMap -->
+  <resultMap id="facilityDamageResultMap" type="Dto.sis.FacilityDamageDTO">
+    <result property="facilityId"     column="FACILITY_ID"/>
+    <result property="facilityName"   column="FACILITY_NAME"/>
+    <result property="address"        column="ADDRESS"/>
+    <result property="damageId"       column="DAMAGE_ID"/>
+    <result property="damageType"     column="DAMAGE_TYPE"/>
+    <result property="damageTypeName" column="DAMAGE_TYPE_NAME"/>
+    <result property="damageImpact"   column="DAMAGE_IMPACT"/>
+    <result property="severity"       column="SEVERITY"/>
+    <result property="damageCnt"      column="DAMAGE_CNT"/>
+    <result property="description"    column="DESCRIPTION"/>
+    <result property="inspectorId"    column="INSPECTOR_ID"/>
+    <result property="reportedDate"   column="REPORTED_DATE"/>
+  </resultMap>
+  
+  <!-- 시설물 기본 정보 조회 (손상 데이터와 무관하게) -->
+  <select id="selectFacilityBasicInfo" parameterType="int" resultType="map">
+    SELECT
+      f."FACILITY_ID" as facilityId,
+      f."FACILITY_NAME" as facilityName,
+      f."ADDRESS" as address,
+      f."FACILITY_TYPE" as facilityType
+    FROM public.facility f
+    WHERE f."FACILITY_ID" = #{facilityId}
+  </select>
+  
+  <!-- 시설 타입 조회 -->
+  <select id="selectFacilityType" parameterType="int" resultType="java.lang.Integer">
+    SELECT f."FACILITY_TYPE"
+    FROM public.facility f
+    WHERE f."FACILITY_ID" = #{facilityId}
+  </select>
+
+  <!-- 특정 시설물의 손상 정보 조회 (BCD 파라미터 반영) -->
+  <select id="selectFacilityDamageInfo" resultMap="facilityDamageResultMap">
+    SELECT
+      f."FACILITY_ID",
+      f."FACILITY_NAME",
+      f."ADDRESS",
+      d."DAMAGE_ID",
+      d."DAMAGE_TYPE",
+      b."CONTENTS" AS DAMAGE_TYPE_NAME,
+      d."DAMAGE_IMPACT",
+      d."SEVERITY",
+      d."DAMAGE_CNT",
+      d."DESCRIPTION",
+      d."INSPECTOR_ID",
+      d."REPORTED_DATE"
+    FROM public.facility f
+    INNER JOIN public.damage d
+      ON f."FACILITY_ID" = d."FACILITY_ID"
+    INNER JOIN public.bunryu b
+      ON d."DAMAGE_TYPE" = b."MCD"
+     AND b."BCD" = #{bcd}
+    WHERE f."FACILITY_ID" = #{facilityId}
+    ORDER BY d."DAMAGE_TYPE"
+  </select>
+
+  <!-- 모든 시설물의 손상 정보 조회 (기존 그대로: BCD=300 고정) -->
+  <select id="selectAllFacilityDamageInfo" resultMap="facilityDamageResultMap">
+    SELECT
+      f."FACILITY_ID",
+      f."FACILITY_NAME",
+      f."ADDRESS",
+      d."DAMAGE_ID",
+      d."DAMAGE_TYPE",
+      b."CONTENTS" AS DAMAGE_TYPE_NAME,
+      d."DAMAGE_IMPACT",
+      d."SEVERITY",
+      d."DAMAGE_CNT",
+      d."DESCRIPTION",
+      d."INSPECTOR_ID",
+      d."REPORTED_DATE"
+    FROM public.facility f
+    INNER JOIN public.damage d
+      ON f."FACILITY_ID" = d."FACILITY_ID"
+    INNER JOIN public.bunryu b
+      ON d."DAMAGE_TYPE" = b."MCD"
+     AND b."BCD" = 300
+    ORDER BY f."FACILITY_ID", d."DAMAGE_TYPE"
+  </select>
+
+  <!-- 손상 유형별 요약 정보 (왼쪽 표) -->
+  <select id="getDamageTypeSummary" resultType="map">
+    SELECT
+      b."CONTENTS"        AS damage_type_name,
+      d."DAMAGE_IMPACT",
+      SUM(d."DAMAGE_CNT") AS total_count,
+      d."DAMAGE_TYPE",
+      b."BCD"
+    FROM public.damage d
+    INNER JOIN public.bunryu b
+      ON d."DAMAGE_TYPE" = b."MCD"
+     AND b."BCD" = #{bcd}
+    WHERE d."FACILITY_ID" = #{facilityId}
+      AND d."REPORTED_DATE" BETWEEN #{from}::date AND #{to}::date
+    GROUP BY b."CONTENTS", d."DAMAGE_IMPACT", d."DAMAGE_TYPE", b."BCD"
+    ORDER BY b."CONTENTS"
+  </select>
+
+  <!-- 점검일 기준 총건수 집계 -->
+  <select id="getWeeklyDamageCounts" resultType="map">
+    SELECT
+      d."REPORTED_DATE" AS dateLabel,
+      SUM(d."DAMAGE_CNT") AS total
+    FROM public.damage d
+    WHERE d."FACILITY_ID" = #{facilityId}
+    GROUP BY d."REPORTED_DATE"
+    ORDER BY d."REPORTED_DATE"
+  </select>
+
+  <!-- 점검일 기준 손상 유형 분포 -->
+  <select id="getWeeklyTypeDistribution" resultType="map">
+    SELECT
+      d."REPORTED_DATE" AS dateLabel,
+      b."CONTENTS" AS damage_type_name,
+      d."DAMAGE_TYPE",
+      b."BCD",
+      SUM(d."DAMAGE_CNT") AS count
+    FROM public.damage d
+    INNER JOIN public.bunryu b
+      ON d."DAMAGE_TYPE" = b."MCD"
+     AND b."BCD" = #{bcd}
+    WHERE d."FACILITY_ID" = #{facilityId}
+    GROUP BY d."REPORTED_DATE", b."CONTENTS", d."DAMAGE_TYPE", b."BCD"
+    ORDER BY d."REPORTED_DATE", b."CONTENTS"
+  </select>
+
+  <!-- 점검일 기준 평균 영향도 점수 -->
+  <select id="getWeeklyImpactScores" resultType="map">
+    SELECT
+      d."REPORTED_DATE" AS dateLabel,
+      AVG(
+        CASE 
+          WHEN d."DAMAGE_IMPACT" = 'A' THEN 90
+          WHEN d."DAMAGE_IMPACT" = 'B' THEN 80
+          WHEN d."DAMAGE_IMPACT" = 'C' THEN 60
+          WHEN d."DAMAGE_IMPACT" = 'D' THEN 40
+          WHEN d."DAMAGE_IMPACT" = 'E' THEN 20
+          ELSE 0
+        END
+      ) AS score
+    FROM public.damage d
+    WHERE d."FACILITY_ID" = #{facilityId}
+    GROUP BY d."REPORTED_DATE"
+    ORDER BY d."REPORTED_DATE"
+  </select>
+
+  <!-- 시설물 타입명 조회 -->
+  <select id="getFacilityTypeName" parameterType="int" resultType="java.lang.String">
+    SELECT b."CONTENTS" AS facility_type_name
+    FROM public.facility f
+    INNER JOIN public.bunryu b ON f."FACILITY_TYPE" = b."MCD" AND b."BCD" = 200
+    WHERE f."FACILITY_ID" = #{facilityId}
+  </select>
+  
+  <select id="getFacilityMarkers" parameterType="int" resultType="MarkerDTO">
+    SELECT
+      f."FACILITY_ID",
+      f."FACILITY_NAME", 
+      f."ADDRESS",
+      CASE WHEN f."GEOM" IS NOT NULL 
+           THEN ST_AsText(f."GEOM")
+           ELSE NULL
+      END as geom,
+      COALESCE(d."SEVERITY",3) as severity
+    FROM facility f LEFT OUTER JOIN damage d
+      ON f."FACILITY_ID" = d."FACILITY_ID"
+    WHERE f."FACILITY_TYPE" = #{facilityType}
+    ORDER BY f."FACILITY_ID" ASC;
+  </select>
+
+</mapper>

@@ -10,9 +10,12 @@
 	    FROM public.facility f
 	</select>
 	
-	<select id="getFacilityMarkersAll" resultType="MarkerDTO">
+	<select id="K3_getFacilityMarkersAll" resultType="MarkerDTO">
 	    SELECT
 	    	f."FACILITY_ID"
+			, f."FACILITY_NAME"
+			,f."FACILITY_TYPE"
+			,f."ADDRESS"
 	        , CASE WHEN f."GEOM" IS NOT NULL 
 	             THEN ST_AsText(f."GEOM")
 	             ELSE NULL
@@ -23,9 +26,12 @@
 	    ORDER BY f."FACILITY_ID" ASC;	
 	</select>
    
-    <select id="getFacilityMarkers" parameterType="int" resultType="MarkerDTO">
+    <select id="K3_getFacilityMarkers" parameterType="int" resultType="MarkerDTO">
 	    SELECT
 	    	f."FACILITY_ID"
+			, f."FACILITY_NAME"
+			,f."FACILITY_TYPE"
+			,f."ADDRESS"
 	        , CASE WHEN f."GEOM" IS NOT NULL 
 	             THEN ST_AsText(f."GEOM")
 	             ELSE NULL

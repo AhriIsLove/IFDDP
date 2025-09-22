@@ -6,6 +6,7 @@ import org.apache.ibatis.session.SqlSession;
 import org.springframework.stereotype.Repository;
 
 import Dto.adg.FacilityDto;
+import Dto.nkm.MarkerDTO;
 import lombok.RequiredArgsConstructor;
 
 @Repository
@@ -14,20 +15,24 @@ public class MarkerRepositoryImpl implements MarkerRepository {
 	private final SqlSession session;
 
 	@Override
-	public List<FacilityDto> getFacilityMarkers(FacilityDto facilityType) {
+	public List<MarkerDTO> getFacilityMarkers(FacilityDto facilityType) {
 		System.out.println("MarkerRepositoryImpl getFacilityMarkers Start");
 		
-		List<FacilityDto> markers = null;
+		List<MarkerDTO> markers = null;
 		try {
 			// 시설물 좌표 가져오기
 			// markers = session.selectList("getFacilityMarkers");
 			if(facilityType.getFacilityType() == 0) {
 				// 전체
-				markers = session.selectList("getFacilityMarkersAll");
-			} else
+				System.out.println("MarkerRepositoryImpl getFacilityMarkers 전체 Start");
+				markers = session.selectList("K3_getFacilityMarkersAll");
+			} else {
 				// 사회기반시설물
-				markers = session.selectList("getFacilityMarkers" , facilityType);
-			
+				System.out.println("MarkerRepositoryImpl getFacilityMarkers 사회기반시설물 Start");
+			System.out.println("MarkerRepositoryImpl getFacilityMarkers facilityType->"+facilityType.getFacilityType());
+			// markers = session.selectList("getFacilityMarkers" , facilityType.getFacilityType());
+			markers = session.selectList("K3_getFacilityMarkers" , facilityType.getFacilityType());
+			}
 			System.out.println("markers->"+markers);
 		} catch (Exception e) {
 			System.out.println("MarkerRepositoryImpl getFacilityMarkers Exception->" + e.getMessage());

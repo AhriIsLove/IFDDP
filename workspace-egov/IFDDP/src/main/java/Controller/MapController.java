@@ -9,7 +9,8 @@ import java.util.List;
 import java.util.Map;
 
 import javax.servlet.http.HttpServletResponse;
-	
+
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.util.StreamUtils;
@@ -20,6 +21,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.ResponseBody;
 
 import Dto.adg.FacilityDto;
+import Dto.nkm.MarkerDTO;
 import Service.nkm.MarkerService;
 import lombok.RequiredArgsConstructor;
 	
@@ -28,7 +30,9 @@ import lombok.RequiredArgsConstructor;
 @RequestMapping("/map")
 public class MapController {
 	
+	    @Autowired
 		private final MarkerService markerService;
+	                  
 		// 테스트
 	    @GetMapping("/view.do")
 	    public String mapView(Model model) {
@@ -56,11 +60,12 @@ public class MapController {
 	    public Map<String, Object> facility(@RequestBody FacilityDto facilityType) {
 	    	System.out.println("MapController facility facilityType->"+facilityType);
 	    	// 사회기반시설물 종류에 따른 좌표 리스트 가져오기
-	    	List<FacilityDto> markers = markerService.getFacilityMarkers(facilityType);
+	    	List<MarkerDTO> markers = markerService.getFacilityMarkers(facilityType);
+	    	System.out.println("MapController facility markers->"+markers);
 	    	
 	    	Map<String, Object> result = new HashMap<String, Object>();
 	    	result.put("totalCount", markers.size());
-	    	result.put("markers", markers); 
+	    	result.put("markers", markers);
 	    	
 	    	return result;
 	    }
