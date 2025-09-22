@@ -34,4 +34,10 @@ public interface FacilityDamageRepository {
 
     /** 시설물 타입명 조회 */
     String getFacilityTypeName(int facilityId);
+    
+    List<Map<String, Object>> getDailyDamageImpact(int facilityId, int bcd, String from, String to);
+    
+    
+   
+    
 }

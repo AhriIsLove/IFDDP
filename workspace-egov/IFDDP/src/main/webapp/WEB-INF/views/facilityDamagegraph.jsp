@@ -47,15 +47,44 @@
   }
   .tg-embed #tablegraphSheet .tg-body{ height: 140px !important; }
   .tg-embed #tablegraphSheet .tg-handle{ display:none; } /* 카드 안에선 핸들 숨김(선택) */
+  
+  /* ▼ 고정형 영향도 팔레트 */
+  .tg-fixed-palette{ display:flex; gap:6px; align-items:center; flex-wrap:wrap; }
+  .tg-fixed-palette .chip{
+    display:inline-flex; align-items:center; justify-content:center;
+    min-width:26px; height:22px; padding:0 8px;
+    border-radius:6px; font-size:11px; font-weight:700; color:#fff;
+    box-shadow: inset 0 0 0 1px rgba(0,0,0,.08);
+  }
+  .tg-fixed-palette .sev-A{ background:#dc2626; } /* A */
+  .tg-fixed-palette .sev-B{ background:#ea580c; } /* B */
+  .tg-fixed-palette .sev-C{ background:#eab308; } /* C */
+  .tg-fixed-palette .sev-D{ background:#84cc16; } /* D */
+  .tg-fixed-palette .sev-E{ background:#16a34a; } /* E */
+  
+  
+  /* ▼ 동적 범례 숨김: 고정형 팔레트만 사용할 때 */
+  #tablegraphSheet #tgLegend{ display:none !important; }
 </style>
 
 <div id="tablegraphSheet" aria-hidden="true">
   <div class="tg-handle"></div>
   <div class="tg-header">
     <div>
-      <div class="tg-title" id="tgTitle">시설 일간 통계</div>
+      <div class="tg-title" id="tgTitle">시설 누적 통계</div>
       <div class="tg-sub"   id="tgSub"></div>
     </div>
+    
+    
+    <!-- ▼ 고정형 영향도 팔레트 -->
+    <div class="tg-fixed-palette" aria-label="영향도 팔레트">
+      <span class="chip sev-A" title="A">A</span>
+      <span class="chip sev-B" title="B">B</span>
+      <span class="chip sev-C" title="C">C</span>
+      <span class="chip sev-D" title="D">D</span>
+      <span class="chip sev-E" title="E">E</span>
+    </div>
+  </div> <!-- ✅ tg-header 닫기 -->
     
   
 
@@ -66,8 +95,8 @@
         <thead>
           <tr>
             <th style="width:45%;">손상유형</th>
-            <th style="width:25%;">영향도</th>
-            <th style="width:30%;">발생건수</th>
+            <th style="width:25%;">영향도(평균)</th>
+            <th style="width:30%;">발생건수(누적총합)</th>
           </tr>
         </thead>
         <tbody id="tgSummaryBody">
@@ -110,7 +139,7 @@
       requestAnimationFrame(()=>sheet.classList.add('open'));
     }
 
-    document.getElementById('tgTitle').textContent = facilityName ? (facilityName + ' · 일간 통계') : '시설 일간 통계';
+    document.getElementById('tgTitle').textContent = facilityName ? (facilityName + ' ·  통계') : '시설 누적 통계';
     document.getElementById('tgSub').textContent   = facilityAddress || '';
 
     // 1) 스켈레톤 요약표/차트 즉시 렌더 (DB와 무관하게 틀 먼저)
@@ -127,6 +156,7 @@
       const resp = await fetch(BASE + '/api/damage/statistics?' + params.toString());
       if(!resp.ok) throw new Error('통계 API 오류');
       const data = await resp.json();
+      window.lastApiResponse = data; // ★ 추가
 
       updateSummaryTable(data?.summaryData || []);
       const dd = data?.dailyData || { counts:[], typeDist:[], impactScores:[] };
@@ -256,42 +286,49 @@
   }
 
   function updateChartWithData(dailyData, summaryData){
-    if (!tgChart) return;
+	  if (!tgChart) return;
 
-    const labels = uniqueDatesFromCounts(dailyData?.counts);
-    if (labels.length) tgChart.data.labels = labels;
+	  const labels = uniqueDatesFromCounts(dailyData?.counts);
+	  if (labels.length) tgChart.data.labels = labels;
 
-    const typeDist = dailyData?.typeDist || [];
-    const typesInData = Array.from(new Set(typeDist.map(d => (d?.damageType && d.damageType.name) || '기타')));
-    const types = typesInData.length ? typesInData : TG_TYPES;
+	  // ★ 개별 손상 데이터 사용
+	  const dailyImpacts = window.lastApiResponse?.dailyImpacts || [];
+	  
+	  // 개별 손상별 데이터셋 생성
+	  const barSets = dailyImpacts.map((item, index) => {
+	    const typeName = item.damage_type_name || '기타';
+	    const severity = item.damage_impact || 'E';
+	    const color = SEVERITY_COLORS[severity] || SEVERITY_COLORS['E'];
+	    const dateLabel = item.dateLabel || item.datelabel;
+	    
+	    return {
+	      type:'bar',
+	      label: `${typeName} (${severity})`,
+	      data: (tgChart.data.labels || []).map(lbl => {
+	        return (lbl === dateLabel) ? Number(item.damage_count || 1) : 0;
+	      }),
+	      backgroundColor: color
+	    };
+	  });
+	  
 
-    // 동적 범례 업데이트 (손상 유형과 해당 손상 등급의 색상으로)
-    updateLegendDynamic(summaryData);
-
-    const barSets = types.map((t,i)=>{
-      // summaryData에서 해당 손상 유형의 severity 찾기
-      const summary = summaryData.find(s => 
-        (s?.damageType && s.damageType.name === t) || s?.damageTypeName === t
-      );
-      const severity = summary?.severity || summary?.damageImpact || 'E';
-      const color = SEVERITY_COLORS[severity] || SEVERITY_COLORS['E'];
-
-      return {
-        type:'bar',
-        label:t,
-        data: (tgChart.data.labels || []).map(lbl=>{
-          const f = typeDist.find(d => d?.dateLabel===lbl && ((d?.damageType && d.damageType.name) === t));
-          return f ? Number(f.count) : 0;
-        }),
-        backgroundColor: color
-      };
-    });
+	  // 동적 범례 업데이트 (개별 손상별)
+	  updateLegendDynamic(dailyImpacts.map(item => ({
+	    damageTypeName: item.damage_type_name,
+	    damageImpact: item.damage_impact
+	  })));
+   
 
     const impactData = (tgChart.data.labels || []).map(lbl=>{
       const f = (dailyData?.impactScores || []).find(d => d?.dateLabel === lbl);
       return f ? Number(f.score) : 0;
     });
-    const lineSet = { type:'line', label:'영향도', data: impactData, yAxisID:'y1', tension:0.25, spanGaps:true };
+    const lineSet = { type:'line', label:'영향도', data: impactData, yAxisID:'y1', tension:0.25, spanGaps:true,borderColor: '#000000',
+    		  backgroundColor: '#000000',
+    		  borderWidth: 2,
+    		  pointRadius: 0,
+    		  pointHoverRadius: 0,
+    		  fill: false };
 
     const dummies = (tgChart.data.datasets || []).filter(ds => ds.hidden === true);
     tgChart.data.datasets = [...dummies, ...barSets, lineSet];
@@ -306,30 +343,45 @@
   }
 
   function updateLegendDynamic(summaryData){
-    const el = document.getElementById('tgLegend');
-    if (!summaryData || !summaryData.length) {
-      el.innerHTML = ''; // 데이터 없으면 범례 숨김
-      return;
-    }
+	  const el = document.getElementById('tgLegend');
+	  if (!summaryData || !summaryData.length) {
+	    el.innerHTML = ''; // 데이터 없으면 범례 숨김
+	    return;
+	  }
 
-    el.innerHTML = summaryData.map(item => {
-      const typeName = (item?.damageType && item.damageType.name) || item?.damageTypeName || '기타';
-      const severity = item?.severity || item?.damageImpact || 'E';
-      const color = SEVERITY_COLORS[severity] || SEVERITY_COLORS['E'];
-      
-      return '<span class="tg-legend-chip" style="background-color:' + color + '">' + 
-             escapeHtml(typeName) + ' (' + severity + ')' +
-             '</span>';
-    }).join('');
+	  // ★ 중복 제거: Set을 사용하여 동일한 라벨 제거
+	  const uniqueLabels = new Set();
+	  const uniqueItems = [];
+
+	  summaryData.forEach(item => {
+	    const typeName = (item?.damageType && item.damageType.name) || item?.damageTypeName || '기타';
+	    // ★ damageImpact 사용
+	    const damageImpact = item?.damageImpact || 'E';
+	    const label = `${typeName} (${damageImpact})`;
+	    
+	    // 중복되지 않은 라벨만 추가
+	    if (!uniqueLabels.has(label)) {
+	      uniqueLabels.add(label);
+	      uniqueItems.push({ typeName, damageImpact });
+	    }
+	  });
+
+	  // 중복 제거된 항목들로만 범례 생성
+	  el.innerHTML = uniqueItems.map(({ typeName, damageImpact }) => {
+	    const color = SEVERITY_COLORS[damageImpact] || SEVERITY_COLORS['E'];
+	    
+	    return '<span class="tg-legend-chip" style="background-color:' + color + '">' + 
+	           escapeHtml(typeName) + ' (' + damageImpact + ')' +
+	           '</span>';
+	  }).join('');
   }
-
   // ====== Summary table (data) ======
   function updateSummaryTable(rows){
     const tb = document.getElementById('tgSummaryBody');
     if(!rows || !rows.length){ return; } // 스켈레톤 유지
     tb.innerHTML = rows.map(r=>{
       const typeName = (r?.damageType && typeof r.damageType==='object') ? (r.damageType.name || '') : (r.damageTypeName || r.damageType || '');
-      const sev      = r?.severity || r?.damageImpact || '';
+      const sev      = r?.damageImpact || '';
       const cnt      = Number(r?.totalCount || r?.damageCnt || 0);
       return '<tr>' +
         '<td>' + escapeHtml(typeName) + '</td>' +

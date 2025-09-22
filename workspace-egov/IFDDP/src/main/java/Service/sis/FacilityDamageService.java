@@ -18,4 +18,8 @@ public interface FacilityDamageService {
 
     /** 특정 시설물의 손상 통계 정보 조회 */
     Map<String, Object> getFacilityDamageStatistics(int facilityId, String from, String to) throws Exception;
+    
+    /** 개별 손상 데이터 조회 (말풍선용) */
+    List<Map<String, Object>> getIndividualDamageData(int facilityId, String from, String to) throws Exception;
+
 }
