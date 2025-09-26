@@ -1,7 +1,9 @@
 package Repository.adg;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import org.apache.ibatis.session.SqlSession;
 import org.springframework.stereotype.Repository;
@@ -50,7 +52,7 @@ public class DamageRepositoryImpl implements DamageRepository {
 					
 					// 손상 이미지 삽입용 DTO 생성
 					DamageImgDto damageImgDto = DamageImgDto.builder()
-							.damageId(result)
+							.damageId(damageDto.getDamageId())
 							.ord(ord)
 							.fileName(fileName)
 							.build();
@@ -92,8 +94,20 @@ public class DamageRepositoryImpl implements DamageRepository {
 
 	@Override
 	public List<String> getDamageImgs(int damageId) {
-		// 손상 이미지 가져오기
+		// 리턴용 데이터 설정
+		List<String> damageImgs = null;
 		
-		return null;
+		try {
+			// SELECT : 시설물 데이터
+			damageImgs = sqlSession.selectList("Damage.getDamageImgs", damageId);
+			
+			// System.out.println(facilityDtos);
+		}
+		catch (Exception e) {
+			// TODO: handle exception
+			System.out.println("손상 이미지 가져오기 실패");
+		}
+
+		return damageImgs;
 	}
 }

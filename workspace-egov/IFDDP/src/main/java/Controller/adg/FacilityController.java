@@ -33,6 +33,7 @@ import org.xml.sax.InputSource;
 import Dto.adg.BunryuDto;
 import Dto.adg.FacilityDto;
 import Service.adg.FacilityService;
+import Util.CustomFileUtil;
 import Util.GISPointConverter;
 import lombok.RequiredArgsConstructor;
 
@@ -40,6 +41,7 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public class FacilityController {
 	private final FacilityService facilityService;
+	private final CustomFileUtil customFileUtil;
 	
 	@GetMapping("/facilityList.do")
 	public String showFacilityList(FacilityDto facilityDto, Model model) {
@@ -254,15 +256,34 @@ public class FacilityController {
 	}
 
 	@GetMapping("/facilityDamageImg")
-	public ResponseEntity<?> showFacilityDetail(@RequestParam("damageId")int damageId) {
+	public ResponseEntity<?> getFacilityDamageImg(@RequestParam("damageId")int damageId) {
+		// System.out.println("facilityDamageImg:"+damageId);
+		
 		try {
-			facilityService.getDamageImgOfDamageId(damageId);
-			
-	        return ResponseEntity.ok("손상이미지 가져오기 성공");
+			List<String> damageImgs = facilityService.getDamageImgOfDamageId(damageId);
+
+	        return ResponseEntity.ok(damageImgs);  // 이미지 경로 리스트 자체를 반환
 	    } catch (Exception e) {
 	        e.printStackTrace();
 	        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("파일 처리 중 오류 발생: " + e.getMessage());
 	    }
 	}
+
+	@GetMapping("/Img")
+	public ResponseEntity<?> showImg(@RequestParam("path")String path) {
+		return customFileUtil.getFile(path);
+	}
 	
+	@GetMapping("/facilityUpdate.do")
+	public String showFacilityUpdate(FacilityDto p_FacilityDto, Model model) {
+		// 시설물 조회
+		FacilityDto facilityDto = facilityService.getFacilityById(p_FacilityDto);
+		
+		// System.out.println(facilityDto);
+
+		model.addAttribute("facilityDto", facilityDto);
+		
+		// 등록 페이지로 이동
+		return "facilityManage/facilityUpdate";
+	}
 }

@@ -41,4 +41,9 @@
         WHERE "BCD" = 300 AND "CONTENTS" = #{typeKorean}
     </select>
     
+    <select id="getDamageImgs" resultType="String">
+        SELECT "FILE_NAME" FROM damage_img 
+        WHERE "DAMAGE_ID" = #{damageId}
+    </select>
+    
 </mapper>

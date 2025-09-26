@@ -19,9 +19,8 @@
 	href="${pageContext.request.contextPath}/resources/css/facilityRegistStyle.css">
 </head>
 <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/tiff.js@1.0.0/tiff.min.js"></script>
 <script type="text/javascript">
-//컨트롤러에서 넘어온 메시지를 변수에 담기 (JSP 문법 사용)
+// 컨트롤러에서 넘어온 메시지를 변수에 담기 (JSP 문법 사용)
 const successMessage = "${message}";
 const errorMessage = "${errorMessage}"; // ${errorMessage} 로 넘긴다.
 // 메시지가 비어있지 않다면 알림창 띄우기
@@ -33,7 +32,7 @@ if (errorMessage && errorMessage.trim() !== "") {
 }
 
 //1. API에서 시설물 종류 데이터 가져오기
-$(document).ready(function() {	
+$(document).ready(function() {
 	$.ajax({
 		// 서울시의 모든 구 데이터 가져오기(25개)
 		// data.seoul.go.kr 안도건 인증키 : 557152464f64676133394772706c43
@@ -49,6 +48,7 @@ $(document).ready(function() {
             // 데이터가 바로 배열 형태로 오는 경우
             $.each(data, function(index, district) {
                 // console.log(index, district);
+                // options += "<option value=" + district.code + ">" + district.name + "</option>";
                 // 현재 값에 따라 select 설정
                 options += "<option value='" + district.name + "' " + (region.includes(district.name) ? 'selected' : '') + ">" + district.name + "</option>";
             });
@@ -64,7 +64,7 @@ $(document).ready(function() {
 	})
 	
 	// 이전값 선언
-	// let previousFacilityTypeValue = null;
+	let previousFacilityTypeValue = null;
     $.ajax({
         url: 'allFacilityType', // API 경로
         type: 'GET',
@@ -79,12 +79,11 @@ $(document).ready(function() {
             // 3. 데이터 순회하면서 옵션 추가
             $.each(data, function(index, facilityType) {
             	// console.log(facilityType.contents);
-                options += "<option value=" + facilityType.mcd + " " + (selectedFacilityType == facilityType.mcd ? 'selected' : '') + ">" + facilityType.contents + "</option>";
+            	options += "<option value=" + facilityType.mcd + " " + (selectedFacilityType == facilityType.mcd ? 'selected' : '') + ">" + facilityType.contents + "</option>";
             });
             
             // 4. select 요소에 옵션 추가
             $('#facilityType').html(options);
-
         	// 이전값 설정
             // previousFacilityTypeValue = $('#facilityType').val(); // 초기값
             // 변경 트리거 발동
@@ -94,61 +93,71 @@ $(document).ready(function() {
             console.error('시설물 종류 데이터를 불러오는 데 실패했습니다:', error);
         }
     });
-	// facilityType select 변경 이벤트 감지
-    // $('#facilityType').on('change', function() {
-    //     // 최초 선택 시 이전값이 null이면 현재값으로 설정
-    //     if (previousFacilityTypeValue === null) {
-    //         previousFacilityTypeValue = $(this).val();
-    //     }
-    // 	// 손상 정보가 있는지 확인
-    // 	const hasDamageRows = $('#damageTableBody tr').length > 0;
-    // 
-    // 	// 손상 정보가 있을 경우에만 확인 메시지 표시
-    // 	if (hasDamageRows) {
-    // 		// 정말 진행하는지 확인
-    //     	if (confirm('시설물 유형을 변경하면 작성 중인 손상 정보가 모두 삭제됩니다. 계속하시겠습니까?')) {
-    //         	// 기존에 작성된 손상 정보 삭제
-    //             $('#damageTableBody').empty();
-    //     	}
-    //     	else{
-    //     		// 이전값 다시 선택...
-    //         	$(this).val(previousFacilityTypeValue); 
-    //     		return;
-    //     	}
-    // 	}
-    // 	// 이전값을 현재값으로 설정
-    //     previousFacilityTypeValue = $(this).val(); 
-    // 	
-    //     // 선택된 값 가져오기
-    //     var selectedValue = $(this).val();
-    //     var param = 300 + (selectedValue * 10);
-    //     console.log(param);
-    //     
-    //     // AJAX 호출
-    //     $.ajax({
-    //         url: 'allDamageTypeOfFacility/' + param, // 300 + (시설물Type * 10)
-    //         type: 'GET',
-    //         dataType: 'json',
-    //         success: function(data) {
-    //         	// 손상 정보 템플릿에 손상 유형 추가
-	//             let options = '';
-    // 
-	//             // 3. 데이터 순회하면서 옵션 추가
-	//             $.each(data, function(index, damageType) {
-	//             	// console.log(facilityType.contents);
-	//                 options += "<option value=" + damageType.mcd + ">" + damageType.contents + "</option>";
-	//             });
-    // 
-	//             // 4. select 요소에 옵션 추가
-	//             $('select[name="damageList[INDEX_PLACEHOLDER].damageType"]').html(options);
-    //         },
-    //         error: function(xhr, status, error) {
-    //             console.error('데이터 로드 실패:', error);
-    //         }
-    //     });
-    // });
-	
+    
     let damageCount = 0; // 손상 정보 입력란의 고유 번호를 관리할 변수
+	// facilityType select 변경 이벤트 감지
+    $('#facilityType').on('change', function() {
+        // 최초 선택 시 이전값이 null이면 현재값으로 설정
+        if (previousFacilityTypeValue === null) {
+            previousFacilityTypeValue = $(this).val();
+            
+            // 최초 선택 후 DB 시설물의 손상 정보가 있는지 확인
+        	var facilityDamageList = "${facilityDto.damageList}";
+        	
+        	if(facilityDamageList.)
+        	
+        	console.log(facilityDamageList);
+        }
+    	// 손상 정보가 있는지 확인
+    	const hasDamageRows = $('#damageTableBody tr').length > 0;
+
+    	// 손상 정보가 있을 경우에만 확인 메시지 표시
+    	if (hasDamageRows) {
+    		// 정말 진행하는지 확인
+        	if (confirm('시설물 유형을 변경하면 작성 중인 손상 정보가 모두 삭제됩니다. 계속하시겠습니까?')) {
+            	// 기존에 작성된 손상 정보 삭제
+                $('#damageTableBody').empty();
+        	}
+        	else{
+        		// 이전값 다시 선택...
+            	$(this).val(previousFacilityTypeValue); 
+        		return;
+        	}
+    	}
+    	// 이전값을 현재값으로 설정
+        previousFacilityTypeValue = $(this).val(); 
+    	
+        // 선택된 값 가져오기
+        var selectedValue = $(this).val();
+        var param = 300 + (selectedValue * 10);
+        // console.log(param);
+        
+        // AJAX 호출
+        $.ajax({
+            url: 'allDamageTypeOfFacility/' + param, // 300 + (시설물Type * 10)
+            type: 'GET',
+            dataType: 'json',
+            success: function(data) {
+            	// 손상 정보 템플릿에 손상 유형 추가
+	            let options = '';
+
+	            // 3. 데이터 순회하면서 옵션 추가
+	            $.each(data, function(index, damageType) {
+	            	// console.log(facilityType.contents);
+	                options += "<option value=" + damageType.mcd + ">" + damageType.contents + "</option>";
+	            });
+
+	            // 4. select 요소에 옵션 추가
+	            $('select[name="damageList[INDEX_PLACEHOLDER].damageType"]').html(options);
+            },
+            error: function(xhr, status, error) {
+                console.error('데이터 로드 실패:', error);
+            }
+        });
+    });
+	
+    // 위에서도 사용하기 떄문에 위로 이동
+    // let damageCount = 0; // 손상 정보 입력란의 고유 번호를 관리할 변수
     $('#addDamageBtn').on('click', function() {
     	// 템플릿 HTML 가져오기
         const templateHtml = $('#damageTemplate').html();
@@ -196,37 +205,6 @@ $(document).ready(function() {
         // 또는
         $('#damageTemplate').remove();
     });
- 	
-
-    /* 모달창 */
-	// 이미지확인 버튼 클릭 이벤트
-	$(document).on('click', '.open-image-modal', function() {
-		var damageId = $(this).data('damage-id');
-		
-		// 손상 이미지 가져오기
-		loadDamageImage(damageId);
-		
-		// 모달창에 damageId 표시하기
-		$("#damageIdDisplay").text("손상 ID: " + damageId);
-		
-		// 모달창 열기
-		$("#imageModal").css("display", "block");
-		
-		// 여기서 damageId를 이용해 이미지를 로드할 수도 있어
-		// loadDamageImage(damageId);
-	});
-	
-	// 모달창 닫기
-	$(".close").click(function() {
-	  $("#imageModal").css("display", "none");
-	});
-	
-	// 모달창 외부 클릭 시 닫기
-	$(window).click(function(event) {
-	  if ($(event.target).is("#imageModal")) {
-	    $("#imageModal").css("display", "none");
-	  }
-	});
 });
 
 //인덱스 재정렬 함수
@@ -257,37 +235,6 @@ function updateDamageIndices() {
     // damageCount 변수 업데이트 (총 행 개수 + 1)
     damageCount = rows.length + 1;
 }
-
-function loadDamageImage(damageId) {
-	var contextPath = "${pageContext.request.contextPath}";
-	
-    $.ajax({
-        url: 'facilityDamageImg',
-        type: 'GET',
-        data: { damageId: damageId },
-        success: function(response) {
-            // 이미지 컨테이너 비우기
-            $("#imageContainer").empty();
-            
-            // 받아온 이미지 링크 배열로 이미지 추가
-            if(response && response.length > 0) {
-                $.each(response, function(index, imageUrl) {
-                    // 이미지 요소 생성해서 컨테이너에 추가
-                    $("<img>")
-                        .attr("src", contextPath + "/Img?path=" + imageUrl)
-                        .addClass("damage-image")
-                        .appendTo("#imageContainer");
-                });
-            } else {
-                $("#imageContainer").html("<p>이미지가 없습니다</p>");
-            }
-        },
-        error: function(xhr, status, error) {
-            console.error("이미지 로딩 실패:", error);
-            $("#imageContainer").html("<p>이미지를 불러오는데 실패했습니다</p>");
-        }
-    });
-}
 </script>
 <body>
 	<%-- 사이드바 include: 반드시 BODY 안에 --%>
@@ -300,15 +247,11 @@ function loadDamageImage(damageId) {
 
 	<!-- 본문 시작(여기부터 입력) -->
 	<div class="content">
-		<div class="main-title">시설물 상세보기</div>
+		<div class="main-title">시설물 수정</div>
 		<hr class="main-title-line">
-		<div style="display: flex; justify-content: space-between; width: 100%;">
-			<button type="button" class="list-btn" onclick="location.href='${pageContext.request.contextPath}/facilityList.do'">목록</button>
-<%-- 			<button type="button" class="update-btn" onclick="location.href='${pageContext.request.contextPath}/facilityUpdate.do?facilityId=${facilityDto.facilityId}'">수정</button> --%>
-		</div>
 		
 		<!-- 시설물 등록 정보 입력 -->
-		<form id="registFacility" action="${pageContext.request.contextPath}/facilityRegist" method="post" enctype="multipart/form-data">
+		<form id="registFacility" action="${pageContext.request.contextPath}/facilityUpdate" method="post" enctype="multipart/form-data">
 			<div class="form-groups">
 				<div>
 					<h3>시설물 정보</h3>
@@ -318,41 +261,41 @@ function loadDamageImage(damageId) {
 					<div class="form-group">
 		                <label for="facilityName">시설물 명</label>
 		                <p/>
-		                <input type="text" name="facilityName" class="form-control" value="${facilityDto.facilityName }" readonly="readonly" style="cursor: default;">
+		                <input type="text" name="facilityName" class="form-control" value="${facilityDto.facilityName }" required="required" readonly="readonly">
 		            </div>
 				</div>
 				<div class="form-row-group">
 					<div class="form-group half-width">
 		                <label for="facilityRegion">시설물 주소</label>
-	                	<p/>
-		                <div style="display: flex; gap: 10px; margin: auto">
-			                <select id="region-sido" name="regionSido" style="width: 50%" onmousedown="return false;">
+		                <p/>
+		                <div style="display: flex; gap: 10px;">
+			                <select id="region-sido" name="regionSido" style="width: 50%">
 			                	<option value="서울특별시">서울특별시</option>
 			                </select>
-			                <select id="region-sigungu" name="regionSigungu" style="width: 50%" onmousedown="return false;">
+			                <select id="region-sigungu" name="regionSigungu" style="width: 50%">
 			                </select>
 		                </div>
 		            </div>
 					<div class="form-group half-width">
 		                <label for="facilityAddress">시설물 상세 주소</label>
 		                <p/>
-		                <input type="text" id="facilityAddress" name="address" class="form-control" value="${facilityDto.address }" readonly="readonly" style="cursor: default;">
+		                <input type="text" id="facilityAddress" name="address" class="form-control" placeholder="시설물 상세 주소" value="${facilityDto.address }">
 		            </div>
 				</div>
 				<div class="form-row-group">
 					<div class="form-group half-width">
 		                <label for="facilityType">시설물 종류</label>
 		                <p/>
-		                <select id="facilityType" name="facilityType" onmousedown="return false;"></select>
+		                <select id="facilityType" name="facilityType"></select>
 		            </div>
 					<div class="form-group half-width">
 		                <label for="facilityScale">시설물 규모</label>
 		                <p/>
-		                <select name="facilityScale" onmousedown="return false;">
+		                <select name="facilityScale">
 						    <option value="1" ${facilityDto.facilityScale == '1' ? 'selected' : ''}>1종</option>
 						    <option value="2" ${facilityDto.facilityScale == '2' ? 'selected' : ''}>2종</option>
 						    <option value="3" ${facilityDto.facilityScale == '3' ? 'selected' : ''}>3종</option>
-						</select>
+		                </select>
 		            </div>
 				</div>
 				<div class="form-row-group">
@@ -361,10 +304,10 @@ function loadDamageImage(damageId) {
 		                <p/>
 		                <div style="display: flex; gap: 10px;">
 			                <label style="display: flex; align-items: center; height: 30px; margin: auto;">위도(Lat):</label>
-			                <input type="number" id="facilityGeomX" name="facilityGeomX" class="form-control" readonly="readonly"
+			                <input type="number" id="facilityGeomX" name="facilityGeomX" class="form-control" placeholder="시설물 위도(Lat)" required="required"
 			                step="0.000001" min="33" max="39" value="${facilityDto.facilityGeomX }">
 			                <label style="display: flex; align-items: center; height: 30px; margin: auto;">경도(Lon):</label>
-			                <input type="number" id="facilityGeomY" name="facilityGeomY" class="form-control" readonly="readonly"
+			                <input type="number" id="facilityGeomY" name="facilityGeomY" class="form-control" placeholder="시설물 경도(Lon)" required="required"
 			                step="0.000001" min="125" max="131" value="${facilityDto.facilityGeomY }">
 		                </div>
 		            </div>
@@ -374,7 +317,7 @@ function loadDamageImage(damageId) {
 		                <label for="facilityYearBuilt">준공년도</label>
 		                <p/>
 		                <fmt:formatDate value="${facilityDto.yearBuilt}" pattern="yyyy-MM-dd" var="formattedYearBuilt" />
-		                <input type="date" id="facilityYearBuilt" name="yearBuilt" class="form-control" value="${formattedYearBuilt}" readonly>
+		                <input type="date" id="facilityYearBuilt" name="yearBuilt" class="form-control" value="${formattedYearBuilt}">
 		            </div>
 				</div>
 				
@@ -394,50 +337,70 @@ function loadDamageImage(damageId) {
 		                    <th>검사관</th>
 		                    <th>발생일자</th>
 		                    <th>이미지</th>
+		                    <th>삭제</th>
 		                </tr>
 		            </thead>
-        			<tbody>
-					    <c:forEach var="damage" items="${facilityDto.damageList}" varStatus="status">
-					        <tr>
-					            <td>${status.count}</td>
-					            <td>${damage.damageTypeKorean}</td>
-					            <td>
-						            <c:choose>
-									    <c:when test="${damage.severity == 1}">A</c:when>
-									    <c:when test="${damage.severity == 2}">B</c:when>
-									    <c:when test="${damage.severity == 3}">C</c:when>
-									    <c:when test="${damage.severity == 4}">D</c:when>
-									    <c:when test="${damage.severity == 5}">E</c:when>
-									    <c:otherwise>-</c:otherwise>
-									</c:choose>
-					            </td>
-					            <td>${damage.damageCnt}</td>
-					            <td>${damage.description}</td>
-					            <td>${damage.inspectorId}</td>
-					            <td><fmt:formatDate pattern="yyyy-MM-dd" value="${damage.reportedDate}" />	</td>
-					            <td>
-						            <button type="button" class="check-btn open-image-modal" data-damage-id="${damage.damageId}">이미지확인</button>
-								</td>
-					        </tr>
-					    </c:forEach>
+        			<tbody id="damageTableBody">
+	                <!-- 손상 정보가 여기에 추가될 거야 -->
 		            </tbody>
 		    	</table>
+			    <!-- 손상 정보 추가 -->
+				<div style="text-align: center;">
+					<button type="button" id="addDamageBtn" class="btn btn-outline-secondary mt-3">
+				        ➕ 손상 정보 추가
+				    </button>
+				    <!-- 손상 정보 템플릿 -->
+					<table style="display: none;">
+					    <tbody id="damageTemplate">
+						    <tr data-index="INDEX_PLACEHOLDER">
+						        <td class="damage-index">INDEX_PLACEHOLDER</td>
+						        <td>
+						            <select class="form-select" name="damageList[INDEX_PLACEHOLDER].damageType">
+						            <!-- ajax 추가 -->
+						            </select>
+						        </td>
+						        <td>
+						            <select class="form-select" name="damageList[INDEX_PLACEHOLDER].severity">
+						                <option value="0">선택하세요</option>
+						                <option value="1">A</option>
+						                <option value="2">B</option>
+						                <option value="3">C</option>
+						                <option value="4">D</option>
+						                <option value="5">E</option>
+						            </select>
+						        </td>
+						        <td>
+						            <input type="number" class="form-control" name="damageList[INDEX_PLACEHOLDER].damageCnt" value="0">
+						        </td>
+						        <td>
+						            <input type="text" class="form-control" name="damageList[INDEX_PLACEHOLDER].description" placeholder="손상 설명 입력">
+						        </td>
+						        <td>
+						            <input type="text" class="form-control" name="damageList[INDEX_PLACEHOLDER].inspectorId" placeholder="검사관">
+						        </td>
+						        <td>
+						            <input type="date" class="form-control" name="damageList[INDEX_PLACEHOLDER].reportedDate">
+						        </td>
+						        <td>
+						            <input type="file" class="form-control file-input" name="damageList[INDEX_PLACEHOLDER].damageFiles" multiple>
+						        </td>
+						        <td>
+						            <button type="button" class="delete-btn remove-damage-btn">삭제</button>
+						        </td>
+						    </tr>
+					    </tbody>
+					</table>
+				</div>
+			    
+				<div style="display: flex; justify-content: flex-end; gap: 10px;">
+					<button type="submit" class="regist-btn">수정</button>
+					<button type="button" class="cancel-btn" onclick="location.href='${pageContext.request.contextPath}/facilityList.do'">취소</button>
+				</div>
+				
 			</div>
 		</form>
 	</div>
 	<!-- 본문 끝(여기까지 입력)-->
-	
-	<!-- 모달창 코드 -->
-	<div id="imageModal" class="modal">
-		<div class="modal-content">
-			<span class="close">&times;</span>
-			<h2>손상 이미지</h2>
-			<p id="damageIdDisplay">손상 ID: </p>
-			<div id="imageContainer">
-			  <!-- 여기에 이미지가 들어갈 거야 -->
-			</div>
-		</div>
-	</div>
 
 	<!-- 접힘/펼침 및 드롭다운-접힘 이동 로직 -->
 	<script>
