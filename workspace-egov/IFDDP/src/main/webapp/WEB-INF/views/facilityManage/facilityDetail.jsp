@@ -19,6 +19,7 @@
 	href="${pageContext.request.contextPath}/resources/css/facilityRegistStyle.css">
 </head>
 <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/tiff.js@1.0.0/tiff.min.js"></script>
 <script type="text/javascript">
 //컨트롤러에서 넘어온 메시지를 변수에 담기 (JSP 문법 사용)
 const successMessage = "${message}";
@@ -48,8 +49,8 @@ $(document).ready(function() {
             // 데이터가 바로 배열 형태로 오는 경우
             $.each(data, function(index, district) {
                 // console.log(index, district);
-	                // 현재 값에 따라 select 설정
-	                options += "<option value='" + district.name + "' " + (region.includes(district.name) ? 'selected' : '') + ">" + district.name + "</option>";
+                // 현재 값에 따라 select 설정
+                options += "<option value='" + district.name + "' " + (region.includes(district.name) ? 'selected' : '') + ">" + district.name + "</option>";
             });
             
             // console.log(options);
@@ -200,16 +201,19 @@ $(document).ready(function() {
     /* 모달창 */
 	// 이미지확인 버튼 클릭 이벤트
 	$(document).on('click', '.open-image-modal', function() {
-	  var damageId = $(this).data('damage-id');
-	  
-	  // 모달창에 damageId 표시하기
-	  $("#damageIdDisplay").text("손상 ID: " + damageId);
-	  
-	  // 모달창 열기
-	  $("#imageModal").css("display", "block");
-	  
-	  // 여기서 damageId를 이용해 이미지를 로드할 수도 있어
-	  // loadDamageImage(damageId);
+		var damageId = $(this).data('damage-id');
+		
+		// 손상 이미지 가져오기
+		loadDamageImage(damageId);
+		
+		// 모달창에 damageId 표시하기
+		$("#damageIdDisplay").text("손상 ID: " + damageId);
+		
+		// 모달창 열기
+		$("#imageModal").css("display", "block");
+		
+		// 여기서 damageId를 이용해 이미지를 로드할 수도 있어
+		// loadDamageImage(damageId);
 	});
 	
 	// 모달창 닫기
@@ -253,6 +257,37 @@ function updateDamageIndices() {
     // damageCount 변수 업데이트 (총 행 개수 + 1)
     damageCount = rows.length + 1;
 }
+
+function loadDamageImage(damageId) {
+	var contextPath = "${pageContext.request.contextPath}";
+	
+    $.ajax({
+        url: 'facilityDamageImg',
+        type: 'GET',
+        data: { damageId: damageId },
+        success: function(response) {
+            // 이미지 컨테이너 비우기
+            $("#imageContainer").empty();
+            
+            // 받아온 이미지 링크 배열로 이미지 추가
+            if(response && response.length > 0) {
+                $.each(response, function(index, imageUrl) {
+                    // 이미지 요소 생성해서 컨테이너에 추가
+                    $("<img>")
+                        .attr("src", contextPath + "/Img?path=" + imageUrl)
+                        .addClass("damage-image")
+                        .appendTo("#imageContainer");
+                });
+            } else {
+                $("#imageContainer").html("<p>이미지가 없습니다</p>");
+            }
+        },
+        error: function(xhr, status, error) {
+            console.error("이미지 로딩 실패:", error);
+            $("#imageContainer").html("<p>이미지를 불러오는데 실패했습니다</p>");
+        }
+    });
+}
 </script>
 <body>
 	<%-- 사이드바 include: 반드시 BODY 안에 --%>
@@ -267,7 +302,10 @@ function updateDamageIndices() {
 	<div class="content">
 		<div class="main-title">시설물 상세보기</div>
 		<hr class="main-title-line">
-		<button type="button" class="list-btn" onclick="location.href='${pageContext.request.contextPath}/facilityList.do'" style="margin-bottom: 10px;">목록</button>
+		<div style="display: flex; justify-content: space-between; width: 100%;">
+			<button type="button" class="list-btn" onclick="location.href='${pageContext.request.contextPath}/facilityList.do'">목록</button>
+<%-- 			<button type="button" class="update-btn" onclick="location.href='${pageContext.request.contextPath}/facilityUpdate.do?facilityId=${facilityDto.facilityId}'">수정</button> --%>
+		</div>
 		
 		<!-- 시설물 등록 정보 입력 -->
 		<form id="registFacility" action="${pageContext.request.contextPath}/facilityRegist" method="post" enctype="multipart/form-data">
@@ -286,6 +324,7 @@ function updateDamageIndices() {
 				<div class="form-row-group">
 					<div class="form-group half-width">
 		                <label for="facilityRegion">시설물 주소</label>
+	                	<p/>
 		                <div style="display: flex; gap: 10px; margin: auto">
 			                <select id="region-sido" name="regionSido" style="width: 50%" onmousedown="return false;">
 			                	<option value="서울특별시">서울특별시</option>
@@ -383,11 +422,6 @@ function updateDamageIndices() {
 					    </c:forEach>
 		            </tbody>
 		    	</table>
-		    	
-				<div style="display: flex; justify-content: flex-end; gap: 10px;">
-					<button type="button" class="regist-btn">수정</button>
-				</div>
-				
 			</div>
 		</form>
 	</div>
@@ -399,7 +433,7 @@ function updateDamageIndices() {
 			<span class="close">&times;</span>
 			<h2>손상 이미지</h2>
 			<p id="damageIdDisplay">손상 ID: </p>
-			<div class="image-container">
+			<div id="imageContainer">
 			  <!-- 여기에 이미지가 들어갈 거야 -->
 			</div>
 		</div>
